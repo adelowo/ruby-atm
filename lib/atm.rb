@@ -33,17 +33,14 @@ class Atm
 
 			is_password_valid(current_customer, prompt("Please provide your password ?"))
 
-			puts ""
-			puts "Authenticating you via our secure server" #deal with it
+			puts "", "Authenticating you via our secure server" #deal with it
 						
 			login_error_count = 0
 			@all_customers.drop @all_customers.size
 
 			hydrate_data(current_customer)
 
-			puts "You have been authenticated"
-
-			puts ""
+			puts "You have been authenticated", ""
 
 		rescue InvalidPasswordError => e
 
@@ -77,13 +74,13 @@ class Atm
 		@customer = Customer.new(customer[2].strip, customer[4].strip.to_f, customer[5].strip.to_f)
 	end
 
-	def print_instructions()
-		puts "Hello, #{@customer.name}"
-		puts ""
+	def print_instructions
+		puts "Hello, #{@customer.name}", ""
 
 		commands = 	[
 			[Balance,"check your balance"], [Withdraw, "withdraw some cash"], [Logout, "logout"]
 		]
+
 		commands.each {|key, value| puts "Press #{key} to #{value}."}
 
 		puts ""
@@ -92,42 +89,31 @@ class Atm
 	def process_command(command)
 		case command.to_i
 		when Balance
-			puts "Available Balance -> #{@customer.available_balance}"
-			puts ""
+			puts "Available Balance -> #{@customer.available_balance}", ""
 
 		when Withdraw
 			puts ""
 
-			amount_to_withdraw = prompt("How much would you like to withraw ?").to_f
+			amount_to_withdraw = prompt("How much would you like to withdraw ?").to_f
 
-			#Some Banks have a "minimum balance policy"
-			cannot_withdraw = (@customer.available_balance - amount_to_withdraw) < @customer.minimum_balance
-
-			cannot_withdraw ||= amount_to_withdraw > @customer.available_balance
-
-			if cannot_withdraw
-				puts "Insufficient funds!"
-				puts ""
-			else	
+			if @customer.can_withdraw?(amount_to_withdraw)
 				puts "Authenticating your withdrawal"
-				@customer.available_balance -= amount_to_withdraw
+				@customer.withdraw!(amount_to_withdraw)
 				puts "Done"
+			else
+				puts "Insufficient funds!",""
 			end	
 
 		when Logout
-			puts "Unauthenticating you via our secure sever"
-			puts "You were successfully logged out"
-			
+			puts "Unauthenticating you via our secure sever", "You have been successfully logged out"
+
 			exit
 
 		else
-			puts ""
-			puts "Unknown Command"
-			puts ""
+			puts "", "Unknown Command", ""
 		end
 
 		bootstrap_atm_commands
-
 	end	
 
 	def get_customer_details_by_last_four_digits(number)
