@@ -1,140 +1,135 @@
-
 class Atm
 
-	FilePath = 'db.txt'
+  FilePath = 'db.txt'
 
-	Separator = ";" #separator for the data in the database file
+  Separator = ';' #separator for the data in the database file
 
-	##Here are the command the ATM understands 
-	Balance = 0
-	Withdraw = 1
-	Logout = 2
-	
-	def initialize
-		@customer = nil
-		@all_customers = []
-		@last_fours = []
-		get_all_customer_details
-	end
+  ##Here are the command the ATM understands
+  Balance = 0
+  Withdraw = 1
+  Logout = 2
 
-	def start
+  def initialize(prompter)
+    @customer = nil
+    @all_customers = []
+    @last_fours = []
+    @prompter = prompter
+    get_all_customer_details
+  end
 
-		# Simulate the debit card insertion
-		last_4_digits = prompt "ENTER the last 4 digits of your card ?"
+  def start
 
-		raise AtmRunTimeError, "The digits must be 4 characters long" unless last_4_digits.length.eql? 4
+    # Simulate the debit card insertion
+    last_4_digits = @prompter.prompt('ENTER the last 4 digits of your card ?')
 
-		current_customer = get_customer_details_by_last_four_digits last_4_digits.to_i
+    raise AtmRunTimeError, 'The digits must be 4 characters long' unless last_4_digits.length.eql? 4
 
-		#Increment anytime an InvalidPasswordError is rescued. 3 is max then we die.
-		login_error_count = 0 
+    current_customer = get_customer_details_by_last_four_digits last_4_digits.to_i
 
-		begin
+    #Increment anytime an InvalidPasswordError is rescued. 3 is max then we die.
+    login_error_count = 0
 
-			is_password_valid(current_customer, prompt("Please provide your password ?"))
+    begin
 
-			puts "", "Authenticating you via our secure server" #deal with it
-						
-			login_error_count = 0
-			@all_customers.drop @all_customers.size
+      is_password_valid(current_customer, @prompter.prompt('Please provide your password ?'))
 
-			hydrate_data(current_customer)
+      puts '', 'Authenticating you via our secure server' #deal with it
 
-			puts "You have been authenticated", ""
+      login_error_count = 0
+      @all_customers = nil
 
-		rescue InvalidPasswordError => e
+      hydrate_data(current_customer)
 
-			raise LoginThrottleError, e.message + '. Atm would exit now' if login_error_count >= 3
+      puts 'You have been authenticated', ''
 
-			login_error_count += 1
+    rescue InvalidPasswordError => e
 
-			##Holy Cow ?... Who does that ? Auto-allow you recall code that caused an exception.		
-			##Man. Ruby is deep!!!
-			retry
-		end
+      raise LoginThrottleError, e.message + '. Atm would exit now' if login_error_count >= 3
 
-		bootstrap_atm_commands
-	end
+      login_error_count += 1
 
-	protected
+      ##Holy Cow ?... Who does that ? Auto-allow you recall code that caused an exception.
+      ##Man. Ruby is deep!!!
+      retry
+    end
 
-	def get_all_customer_details
-		File.open(FilePath, "r").each do |line|
-			next unless line.match(/\w+/)
-			@all_customers.push(line.strip) 
-		end
-	end
+    bootstrap_atm_commands
+  end
 
-	def bootstrap_atm_commands
-		print_instructions 
-		process_command(prompt("How may we help you today ? Please Enter a command"))		
-	end	
+  protected
 
-	def hydrate_data(customer)
-		@customer = Customer.new(customer[2].strip, customer[4].strip.to_f, customer[5].strip.to_f)
-	end
+  def get_all_customer_details
+    File.open(FilePath, 'r').each do |line|
+      next unless line.match(/\w+/)
+      @all_customers.push(line.strip)
+    end
+  end
 
-	def print_instructions
-		puts "Hello, #{@customer.name}", ""
+  def bootstrap_atm_commands
+    print_instructions
+    process_command(@prompter.prompt('How may we help you today ? Please Enter a command'))
+  end
 
-		commands = 	[
-			[Balance,"check your balance"], [Withdraw, "withdraw some cash"], [Logout, "logout"]
-		]
+  def hydrate_data(customer)
+    @customer = Customer.new(customer[2].strip, customer[4].strip.to_f, customer[5].strip.to_f)
+  end
 
-		commands.each {|key, value| puts "Press #{key} to #{value}."}
+  def print_instructions
+    puts "Hello, #{@customer.name}", ''
 
-		puts ""
-	end	
+    commands = [
+        [Balance, 'check your balance'], [Withdraw, 'withdraw some cash'], [Logout, 'logout']
+    ]
 
-	def process_command(command)
-		case command.to_i
-		when Balance
-			puts "Available Balance -> #{@customer.available_balance}", ""
+    commands.each { |key, value| puts "Press #{key} to #{value}." }
 
-		when Withdraw
-			puts ""
+    puts ''
+  end
 
-			amount_to_withdraw = prompt("How much would you like to withdraw ?").to_f
+  def process_command(command)
+    case command.to_i
+      when Balance
+        puts "Available Balance -> #{@customer.available_balance}", ''
 
-			if @customer.can_withdraw?(amount_to_withdraw)
-				puts "Authenticating your withdrawal"
-				@customer.withdraw!(amount_to_withdraw)
-				puts "Done"
-			else
-				puts "Insufficient funds!",""
-			end	
+      when Withdraw
+        puts ''
 
-		when Logout
-			puts "Unauthenticating you via our secure sever", "You have been successfully logged out"
+        amount_to_withdraw = @prompter.prompt('How much would you like to withdraw ?').to_f
 
-			exit
+        if @customer.can_withdraw?(amount_to_withdraw)
+          puts 'Authenticating your withdrawal'
+          @customer.withdraw!(amount_to_withdraw)
+          puts 'Done'
+        else
+          puts 'Insufficient funds!', ''
+        end
 
-		else
-			puts "", "Unknown Command", ""
-		end
+      when Logout
+        puts 'Unauthenticating you via our secure sever', 'You have been successfully logged out'
 
-		bootstrap_atm_commands
-	end	
+        exit
 
-	def get_customer_details_by_last_four_digits(number)
-		found = []
-		
-		@all_customers.each do |customer|
-			next unless customer.slice(0,4).to_i.eql? number
-			found = customer.split Separator
-		end
+      else
+        puts '', 'Unknown Command', ''
+    end
 
-		raise UnknownCardError, "Invalid debit card" if found.empty?
+    bootstrap_atm_commands
+  end
 
-		found
-	end
+  def get_customer_details_by_last_four_digits(number)
+    found = []
 
-	def is_password_valid(customer, password)
-		raise InvalidPasswordError, "Please input the right password" unless customer[3].strip.eql? password
-	end
+    @all_customers.each do |customer|
+      next unless customer.slice(0, 4).to_i.eql? number
+      found = customer.split Separator
+    end
 
-	def prompt(question)
-		puts question
-		gets.strip
-	end
+    raise UnknownCardError, 'Invalid debit card' if found.empty?
+
+    found
+  end
+
+  def is_password_valid(customer, password)
+    raise InvalidPasswordError, 'Please input the right password' unless customer[3].strip.eql? password
+  end
 end

@@ -4,7 +4,8 @@ A Ruby program that simulates an (ATM)Automated Teller Machine session.
 > Currently learning Ruby. One of the many stupid/cool stuffs i will write in Ruby for the next n years
 
 - There are accounts. 
-- Accounts have a unique debit card - the cards are uniquely identified by their last 4 digits. Accounts may (not) have cash in them. 
+- Accounts have a unique debit card - the cards are uniquely identified by their last 4 digits. 
+- Accounts may (not) have cash in them. 
 - Some accounts have a minimum balance policy - you cannot withraw all your cash.
 
 ```bash

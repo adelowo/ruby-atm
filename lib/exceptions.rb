@@ -1,4 +1,3 @@
-
 AtmRunTimeError = Class.new(RuntimeError)
 
 BalanceOverflowError = Class.new(ArgumentError)

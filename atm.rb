@@ -1,7 +1,10 @@
 #!/usr/bin/env ruby
 
-require "./lib/atm"
-require "./lib/exceptions"
-require "./lib/customer"
+require './lib/atm'
+require './lib/prompter'
+require './lib/exceptions'
+require './lib/customer'
 
-Atm.new.start
+atm = Atm.new(Prompter.new)
+
+atm.start
